@@ -1,0 +1,26 @@
+diff --git a/src/Listener/FormatPostMentions.php b/src/Listener/FormatPostMentions.php
+index 888da12..89aefe7 100755
+--- a/src/Listener/FormatPostMentions.php
++++ b/src/Listener/FormatPostMentions.php
+@@ -65,7 +65,7 @@ class FormatPostMentions
+             ->prepend([static::class, 'addId'])
+             ->setJS('function() { return true; }');
+ 
+-        $configurator->Preg->match('/\B@(?<username>[a-z0-9_-]+)#(?<id>\d+)/i', $tagName);
++        $configurator->Preg->match('/\B@(?<username>[-_a-zA-Z0-9\x7f-\xff]+)#(?<id>\d+)/i', $tagName);
+     }
+ 
+     /**
+diff --git a/src/Listener/FormatUserMentions.php b/src/Listener/FormatUserMentions.php
+index 28b279a..0b632a6 100755
+--- a/src/Listener/FormatUserMentions.php
++++ b/src/Listener/FormatUserMentions.php
+@@ -69,7 +69,7 @@ class FormatUserMentions
+             ->addParameterByName('userRepository')
+             ->setJS('function() { return true; }');
+ 
+-        $configurator->Preg->match('/\B@(?<username>[a-z0-9_-]+)(?!#)/i', $tagName);
++        $configurator->Preg->match('/\B@(?<username>[-_a-zA-Z0-9\x7f-\xff]+)(?!#)/i', $tagName);
+     }
+ 
+     /**

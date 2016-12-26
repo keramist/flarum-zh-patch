@@ -1,0 +1,103 @@
+diff --git a/js/forum/dist/app.js b/js/forum/dist/app.js
+index cf6c6ca4..4436a712 100644
+--- a/js/forum/dist/app.js
++++ b/js/forum/dist/app.js
+@@ -28996,7 +28996,7 @@ System.register('flarum/initializers/routes', ['flarum/components/IndexPage', 'f
+      */
+     app.route.discussion = function (discussion, near) {
+       return app.route(near && near !== 1 ? 'discussion.near' : 'discussion', {
+-        id: discussion.id() + '-' + discussion.slug(),
++        id: discussion.id(),
+         near: near && near !== 1 ? near : undefined
+       });
+     };
+diff --git a/js/forum/src/initializers/routes.js b/js/forum/src/initializers/routes.js
+index c319b3d1..f3454483 100644
+--- a/js/forum/src/initializers/routes.js
++++ b/js/forum/src/initializers/routes.js
+@@ -35,7 +35,7 @@ export default function(app) {
+    */
+   app.route.discussion = (discussion, near) => {
+     return app.route(near && near !== 1 ? 'discussion.near' : 'discussion', {
+-      id: discussion.id() + '-' + discussion.slug(),
++      id: discussion.id(),
+       near: near && near !== 1 ? near : undefined
+     });
+   };
+diff --git a/src/Core/Repository/UserRepository.php b/src/Core/Repository/UserRepository.php
+index 9463b4ba..8f5bde55 100644
+--- a/src/Core/Repository/UserRepository.php
++++ b/src/Core/Repository/UserRepository.php
+@@ -75,7 +75,7 @@ class UserRepository
+      */
+     public function getIdForUsername($username, User $actor = null)
+     {
+-        $query = User::where('username', 'like', $username);
++        $query = User::where('username', 'like', rawurldecode($username));
+ 
+         return $this->scopeVisibleTo($query, $actor)->value('id');
+     }
+diff --git a/src/Core/Search/Discussion/Fulltext/MySqlFulltextDriver.php b/src/Core/Search/Discussion/Fulltext/MySqlFulltextDriver.php
+index 374d8fd4..37c95b5a 100644
+--- a/src/Core/Search/Discussion/Fulltext/MySqlFulltextDriver.php
++++ b/src/Core/Search/Discussion/Fulltext/MySqlFulltextDriver.php
+@@ -20,8 +20,7 @@ class MySqlFulltextDriver implements DriverInterface
+     public function match($string)
+     {
+         $discussionIds = Post::where('type', 'comment')
+-            ->whereRaw('MATCH (`content`) AGAINST (? IN BOOLEAN MODE)', [$string])
+-            ->orderByRaw('MATCH (`content`) AGAINST (?) DESC', [$string])
++            ->where('content', 'like', '%'.$string.'%')
+             ->lists('discussion_id', 'id');
+ 
+         $relevantPostIds = [];
+diff --git a/src/Core/Validator/UserValidator.php b/src/Core/Validator/UserValidator.php
+index 3f4fad35..7252705b 100644
+--- a/src/Core/Validator/UserValidator.php
++++ b/src/Core/Validator/UserValidator.php
+@@ -45,7 +45,7 @@ class UserValidator extends AbstractValidator
+         return [
+             'username' => [
+                 'required',
+-                'regex:/^[a-z0-9_-]+$/i',
++                'regex:/^[-_a-z0-9\x7f-\xff]+$/i',
+                 'unique:users,username'.$idSuffix,
+                 'min:3',
+                 'max:30'
+diff --git a/src/Http/WebApp/WebAppView.php b/src/Http/WebApp/WebAppView.php
+index 90f19336..f526c911 100644
+--- a/src/Http/WebApp/WebAppView.php
++++ b/src/Http/WebApp/WebAppView.php
+@@ -151,7 +151,6 @@ class WebAppView
+         $this->locales = $locales;
+         $this->userSerializer = $userSerializer;
+ 
+-        $this->addHeadString('<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Open+Sans:400italic,700italic,400,700,600">', 'font');
+ 
+         $this->js = $this->assets->getJs();
+         $this->css = $this->assets->getCss();
+diff --git a/views/index.blade.php b/views/index.blade.php
+index cbde0cff..3d07f7b1 100644
+--- a/views/index.blade.php
++++ b/views/index.blade.php
+@@ -8,7 +8,7 @@ $url = app('Flarum\Forum\UrlGenerator');
+         @foreach ($document->data as $discussion)
+             <li>
+                 <a href="{{ $url->toRoute('discussion', [
+-                    'id' => $discussion->id . '-' . $discussion->attributes->slug
++                    'id' => $discussion->id
+                 ]) }}">
+                     {{ $discussion->attributes->title }}
+                 </a>
+diff --git a/views/install/app.php b/views/install/app.php
+index 2e860102..7160dfca 100644
+--- a/views/install/app.php
++++ b/views/install/app.php
+@@ -7,7 +7,6 @@
+     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1">
+ 
+     <style>
+-      @import url(//fonts.googleapis.com/css?family=Open+Sans:400italic,700italic,400,700,600);
+ 
+       body {
+         background: #fff;
